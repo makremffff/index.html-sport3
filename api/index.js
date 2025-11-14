@@ -1,30 +1,31 @@
-// استخدام متغيرات البيئة
+// مطلوب Env Variables:
+// NEXT_PUBLIC_SUPABASE_URL
+// NEXT_PUBLIC_SUPABASE_ANON_KEY
+// NEXT_PUBLIC_BOT_USERNAME (optional)
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-const restHeaders = {
-  apikey: SUPABASE_ANON_KEY,
-  Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-  'Content-Type': 'application/json'
-};
+function restHeaders() {
+  return {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json'
+  };
+}
 
-async function supabase(method, table, body = null, query = '') {
+async function supabase(method, table, body, query = '') {
   const url = `${SUPABASE_URL}/rest/v1/${table}${query}`;
   const res = await fetch(url, {
     method,
-    headers: restHeaders,
+    headers: restHeaders(),
     body: body ? JSON.stringify(body) : undefined
   });
-  if (!res.ok) throw new Error('Supabase error');
+  if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
 
-/* ========== المنطق ========== */
-module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
+export default async function handler(req, res) {
   const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
   const action = searchParams.get('action');
 
@@ -33,10 +34,11 @@ module.exports = async (req, res) => {
       const userID = searchParams.get('userID');
       const ref = searchParams.get('ref');
 
-      // جلب المستخدم إن وجد
-      const existing = await supabase('GET', 'players', null, `?user_id=eq.${userID}`);
-      if (existing.length > 0)
-        return res.json({ success: true, msg: 'exists' });
+      // تحقق من وجود المستخدم
+      const existing = await supabase('GET', 'players', null, `?user_id=eq.${userID}&select=*`);
+      if (existing && existing.length > 0) {
+        return res.json({ success: true, message: 'User already exists' });
+      }
 
       // إدخال المستخدم الجديد
       await supabase('POST', 'players', {
@@ -47,14 +49,15 @@ module.exports = async (req, res) => {
         referrals: 0
       });
 
-      // مكافأة الإحالة
+      // منطق الإحالة
       if (ref && ref !== userID) {
-        const [refUser] = await supabase('GET', 'players', null, `?user_id=eq.${ref}`);
-        if (refUser) {
+        const refUsers = await supabase('GET', 'players', null, `?user_id=eq.${ref}&select=*`);
+        if (refUsers && refUsers.length > 0) {
+          const refUser = refUsers[0];
           await supabase('PATCH', 'players', {
             referrals: refUser.referrals + 1,
             points: refUser.points + 5000,
-            usdt: refUser.usdt + 0.25
+            usdt: refUser.usdt + 0
           }, `?user_id=eq.${ref}`);
         }
       }
@@ -64,14 +67,15 @@ module.exports = async (req, res) => {
 
     if (action === 'getProfile') {
       const userID = searchParams.get('userID');
-      const [row] = await supabase('GET', 'players', null, `?user_id=eq.${userID}`);
-      if (!row) return res.status(404).json({ error: 'Not found' });
-      return res.json(row);
+      const rows = await supabase('GET', 'players', null, `?user_id=eq.${userID}&select=*`);
+      if (!rows || rows.length === 0) {
+        return res.json({ success: false, error: 'User not found' });
+      }
+      return res.json({ success: true, data: rows[0] });
     }
 
-    return res.status(400).json({ error: 'Bad request' });
+    return res.json({ success: false, error: 'Unknown action' });
   } catch (e) {
-    console.error(e);
-    return res.status(500).json({ error: 'Server error' });
+    return res.json({ success: false, error: e.message });
   }
-};
+}
