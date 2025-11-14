@@ -1,30 +1,63 @@
-/* ========== أدوات Telegram ========== */
+/* ========== إعدادات ========== */
+const BOT_USERNAME = window.ENV?.NEXT_PUBLIC_BOT_USERNAME || 'Game_win_usdtBot';
+
+/* ========== مساعدين ========== */
 function getTelegramUserID() {
   try {
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user?.id)
-      return window.Telegram.WebApp.initDataUnsafe.user.id;
-  } catch {}
-  return localStorage.getItem('userID') || null;
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+      return String(window.Telegram.WebApp.initDataUnsafe.user.id);
+    }
+    return localStorage.getItem('fallbackUserID') || 'fallback_' + Math.random().toString(36).slice(2);
+  } catch {
+    return localStorage.getItem('fallbackUserID') || 'fallback_' + Math.random().toString(36).slice(2);
+  }
 }
 
 function getRefParam() {
   try {
-    const start_param = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    if (start_param?.startsWith('ref_')) return start_param.replace('ref_', '');
-  } catch {}
-  const q = new URLSearchParams(window.location.search);
-  return q.get('start_param')?.replace('ref_', '') || null;
+    // من Telegram
+    const sp = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    if (sp && sp.startsWith('ref_')) return sp.replace('ref_', '');
+    // من URL
+    const p = new URLSearchParams(location.search);
+    const ref = p.get('ref') || p.get('startapp') || '';
+    if (ref.startsWith('ref_')) return ref.replace('ref_', '');
+    return ref;
+  } catch {
+    return '';
+  }
 }
 
-/* ========== API helper ========== */
+function el(id) {
+  return document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+}
+
+function setText(id, text) {
+  const elem = el(id);
+  if (elem) elem.textContent = text;
+}
+
+function setImage(id, src) {
+  const elem = el(id);
+  if (elem) elem.src = src;
+}
+
+function showCopySuccess() {
+  const m = el('copyMsg');
+  if (!m) return;
+  m.style.opacity = '1';
+  setTimeout(() => m.style.opacity = '0', 2000);
+}
+
+/* ========== API ========== */
 async function api(action, params = {}) {
-  const usp = new URLSearchParams({ action, ...params });
-  const res = await fetch(`/api/index?${usp}`);
-  if (!res.ok) throw new Error('API error');
+  const url = new URL('/api/index', location.origin);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url);
   return res.json();
 }
 
-/* ========== الوظائف الرئيسية ========== */
 async function registerUser(userID, ref) {
   return api('registerUser', { userID, ref });
 }
@@ -35,49 +68,39 @@ async function getProfile(userID) {
 
 /* ========== تحديث الواجهة ========== */
 function updateUI(data) {
-  // نقوم بالتحديث فقط إذا وجدنا العنصر
-  const set = (id, txt) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = txt;
-  };
-  set('points', data.points ?? 0);
-  set('usdt', data.usdt ?? 0);
-  set('status', `الإحالات: ${data.referrals ?? 0}`);
-  set('profile', `نقاطك: ${data.points ?? 0} | USDT: ${data.usdt ?? 0}`);
-
-  const refLink = `https://t.me/Game_win_usdtBot/earn?startapp=ref_${data.user_id}`;
-  const refEl = document.getElementById('refLink');
-  if (refEl) refEl.value = refLink;
-}
-
-/* ========== أزرار ========== */
-function setupButtons() {
-  const btn = document.getElementById('copyRef');
-  if (!btn) return;
-  btn.style.display = 'block';
-  btn.onclick = () => {
-    const inp = document.getElementById('refLink');
-    if (!inp) return;
-    inp.style.display = 'block';
-    inp.select();
-    document.execCommand('copy');
-    alert('تم النسخ!');
-  };
-}
-
-/* ========== التهيئة ========== */
-(async function init() {
-  try {
-    const userID = getTelegramUserID();
-    if (!userID) return console.warn('لا يوجد userID');
-    localStorage.setItem('userID', userID);
-
-    const ref = getRefParam();
-    await registerUser(userID, ref);
-    const profile = await getProfile(userID);
-    updateUI(profile);
-    setupButtons();
-  } catch (e) {
-    console.error(e);
+  setText('points', data.points ?? 0);
+  setText('usdt', data.usdt ?? 0);
+  setText('refCount', data.referrals ?? 0);
+  if (data.photo_url) setImage('userImg', data.photo_url);
+  // إنشاء رابط الإحالة
+  const link = `https://t.me/${BOT_USERNAME}/earn?startapp=ref_${data.user_id}`;
+  // زر النسخ
+  const btn = el('copyBtn');
+  if (btn) {
+    btn.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(link);
+        showCopySuccess();
+      } catch {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = link;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showCopySuccess();
+      }
+    };
   }
+}
+
+/* ========== تهيئة ========== */
+(async function init() {
+  const userID = getTelegramUserID();
+  const ref = getRefParam();
+  // تسجيل أو جلب البيانات
+  await registerUser(userID, ref);
+  const prof = await getProfile(userID);
+  if (prof.success) updateUI(prof.data);
 })();

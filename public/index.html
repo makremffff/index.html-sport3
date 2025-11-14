@@ -1,179 +1,48 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>iPhone 14 Pro – 6 أزرار 3D Puch</title>
+    <title>iPhone 14 Pro – 6 3D Buttons</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{
-            height:100vh;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:#111;
-            font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Helvetica,Arial,sans-serif;
+            height:100vh;display:flex;align-items:center;justify-content:center;
+            background:#111;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Helvetica,Arial,sans-serif;
         }
         .phone{
-            position:relative;
-            width:min(390px, 90vw);
-            aspect-ratio:9/17.55;
-            background:#000;
-            border-radius:47px;
+            position:relative;width:min(390px, 90vw);aspect-ratio:9/17.55;
+            background:#000;border-radius:47px;
             box-shadow:0 0 0 2px #333, 0 0 0 4px #000, 0 25px 50px -10px rgba(0,0,0,.6);
             overflow:hidden;
         }
         .island{
-            position:absolute;
-            top:10px;
-            left:50%;
-            transform:translateX(-50%);
-            width:126px;
-            height:37px;
-            background:#000;
-            border-radius:20px;
-            z-index:3;
+            position:absolute;top:10px;left:50%;transform:translateX(-50%);
+            width:126px;height:37px;background:#000;border-radius:20px;z-index:3;
         }
         .screen{
-            position:absolute;
-            inset:3px;
-            background:#1a1a1a;
-            border-radius:44px;
-            overflow:hidden;
-            display:flex;
-            flex-direction:column;
-            justify-content:flex-end;
-            align-items:center;
+            position:absolute;inset:3px;background:#1a1a1a;border-radius:44px;
+            overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
             padding-bottom:20px;
         }
-        .btn-row{
-            display:flex;
-            gap:12px;
-            margin-bottom:12px;
-        }
+        .btn-row{display:flex;gap:12px;margin-bottom:12px}
         .btn{
-            width:40px;
-            height:40px;
-            border-radius:12px;
+            width:40px;height:40px;border-radius:12px;
             background:linear-gradient(145deg, #c62c2c, #8a1b1b);
-            box-shadow:
-                6px 6px 12px #0f0f0f,
-                -6px -6px 12px #3b3b3b,
-                inset 0 0 0 #000;
-            transition:.15s;
-            cursor:pointer;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            color:#fff;
-            font-size:10px;
-            font-weight:600;
-            text-align:center;
-            user-select:none;
-            padding:2px;
+            box-shadow:6px 6px 12px #0f0f0f, -6px -6px 12px #3b3b3b;
+            transition:.15s;cursor:pointer;display:flex;align-items:center;justify-content:center;
+            color:#fff;font-size:10px;font-weight:600;text-align:center;user-select:none;padding:2px;
         }
         .btn:active{
-            box-shadow:
-                inset 6px 6px 12px #0f0f0f,
-                inset -6px -6px 12px #3b3b3b;
+            box-shadow:inset 6px 6px 12px #0f0f0f, inset -6px -6px 12px #3b3b3b;
             transform:scale(.96);
         }
-        .page{
-            position:absolute;
-            inset:0;
-            background:#000;
-            display:none;
-        }
+        .page{position:absolute;inset:0;background:#000;display:none}
         .page.active{display:block}
-        .back{
-            position:absolute;
-            top:20px;
-            left:20px;
-            background:#c62c2c;
-            border:none;
-            color:#fff;
-            padding:8px 16px;
-            border-radius:8px;
-            cursor:pointer;
-            font-size:14px;
-        }
-        .user-img{
-            position:absolute;
-            top:20px;
-            left:20px;
-            width:40px;
-            height:40px;
-            border-radius:50%;
-            border:2px solid #c62c2c;
-            object-fit:cover;
-            z-index:10;
-        }
-
-        /* الأرصدة على اليمين، في أعلى 30% من الشاشة */
-        .side-balances{
-            position:absolute;
-            top:9%; /* ≈ 30% من 30% */
-            right:20px;
-            display:flex;
-            flex-direction:column;
-            gap:6px;
-            z-index:10;
-            pointer-events:none;
-        }
-        .side-balances .balance{
-            font-size:13px;
-            color:#fff;
-            font-weight:600;
-            text-shadow: 0 0 2px #000;
-        }
-
-        /* عناصر الإحالة */
-        #refLink{
-            position:absolute;
-            bottom:80px;
-            left:50%;
-            transform:translateX(-50%);
-            width:80%;
-            padding:8px 12px;
-            background:#222;
-            color:#fff;
-            border-radius:8px;
-            font-size:12px;
-            text-align:center;
-            z-index:10;
-            display:none;
-        }
-        #copyRef{
-            position:absolute;
-            bottom:50px;
-            left:50%;
-            transform:translateX(-50%);
-            padding:6px 16px;
-            background:#c62c2c;
-            color:#fff;
-            border:none;
-            border-radius:8px;
-            font-size:12px;
-            cursor:pointer;
-            z-index:10;
-            display:none;
-        }
-        #status{
-            position:absolute;
-            top:60px;
-            left:20px;
-            color:#fff;
-            font-size:12px;
-            z-index:10;
-        }
-        #profile{
-            position:absolute;
-            top:80px;
-            left:20px;
-            color:#fff;
-            font-size:12px;
-            z-index:10;
-        }
+        .back{position:absolute;top:20px;left:20px;background:#c62c2c;border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:14px}
+        .user-img{position:absolute;top:20px;left:20px;width:40px;height:40px;border-radius:50%;border:2px solid #c62c2c;object-fit:cover;z-index:10}
+        .side-balances{position:absolute;top:9%;right:20px;display:flex;flex-direction:column;gap:6px;z-index:10;pointer-events:none}
+        .side-balances .balance{font-size:13px;color:#fff;font-weight:600;text-shadow:0 0 2px #000}
     </style>
 </head>
 <body>
@@ -181,39 +50,54 @@
         <img class="user-img" id="userImg" style="display:none;">
         <div class="island"></div>
 
-        <!-- الأرصدة على اليمين، في أعلى 30% من الشاشة -->
+        <!-- Top-right balances -->
         <div class="side-balances">
             <div class="balance">Points: <span id="points">0</span></div>
             <div class="balance">USDT: <span id="usdt">0.00</span></div>
         </div>
 
-        <!-- عناصر الإحالة -->
-        <div id="status"></div>
-        <div id="profile"></div>
-        <input id="refLink" readonly>
-        <button id="copyRef">نسخ الرابط</button>
-
+        <!-- Home screen -->
         <div class="screen" id="home">
             <div class="btn-row">
-                <div class="btn" onclick="showPage('withdraw')">Withdraw</div>
-                <div class="btn" onclick="showPage('task')">Task</div>
-                <div class="btn" onclick="alert('ADS action')">Ads</div>
-                <div class="btn" onclick="showPage('swap')">Swap</div>
-                <div class="btn" onclick="showPage('ledbord')">Ledbord</div>
-                <div class="btn" onclick="showPage('refal')">Refal</div>
+                <div class="btn" id="withdrawBtn" name="withdrawBtn">Withdraw</div>
+                <div class="btn" id="taskBtn" name="taskBtn">Task</div>
+                <div class="btn" id="adsBtn" name="adsBtn">Ads</div>
+                <div class="btn" id="swapBtn" name="swapBtn">Swap</div>
+                <div class="btn" id="ledbordBtn" name="ledbordBtn">Ledbord</div>
+                <div class="btn" id="refalBtn" name="refalBtn">Refal</div>
             </div>
         </div>
 
-        <div class="page" id="withdraw"><button class="back" onclick="showPage('home')">Back</button></div>
-        <div class="page" id="task"><button class="back" onclick="showPage('home')">Back</button></div>
-        <div class="page" id="swap"><button class="back" onclick="showPage('home')">Back</button></div>
-        <div class="page" id="ledbord"><button class="back" onclick="showPage('home')">Back</button></div>
-        <div class="page" id="refal"><button class="back" onclick="showPage('home')">Back</button></div>
+        <!-- Sub-pages -->
+        <div class="page" id="withdraw"><button class="back" id="backWithdraw" name="backWithdraw">Back</button></div>
+        <div class="page" id="task"><button class="back" id="backTask" name="backTask">Back</button></div>
+        <div class="page" id="swap"><button class="back" id="backSwap" name="backSwap">Back</button></div>
+        <div class="page" id="ledbord"><button class="back" id="backLedbord" name="backLedbord">Back</button></div>
+
+        <!-- Referral page -->
+        <div class="page" id="refal">
+            <button class="back" id="backRefal" name="backRefal">Back</button>
+            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:20px;">
+                <h2 style="color:#fff;margin-bottom:30px;">Referral Program</h2>
+
+                <!-- Copy button -->
+                <button id="copyBtn" name="copyBtn" style="
+                    background:linear-gradient(145deg, #c62c2c, #8a1b1b);
+                    border:none;color:#fff;padding:15px 30px;border-radius:12px;
+                    font-size:16px;font-weight:600;cursor:pointer;
+                    box-shadow:6px 6px 12px #0f0f0f, -6px -6px 12px #3b3b3b;
+                    transition:all .15s">Copy Referral Link</button>
+
+                <!-- Copy success hint -->
+                <div id="copyMsg" name="copyMsg" style="color:#4CAF50;margin-top:15px;opacity:0;transition:opacity .3s">✓ Copied!</div>
+
+                <!-- Referral counter -->
+                <div style="margin-top:30px;color:#fff;font-size:18px">Referrals: <span id="refCount" name="refCount">0</span></div>
+            </div>
+        </div>
     </div>
 
-    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- سكربت المشروع -->
     <script src="index.js"></script>
 </body>
 </html>
