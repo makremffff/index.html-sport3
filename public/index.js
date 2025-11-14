@@ -1,61 +1,44 @@
-/* ========== إعدادات ========== */
-const BOT_USERNAME = window.ENV?.NEXT_PUBLIC_BOT_USERNAME || 'Game_win_usdtBot';
+/* /public/index.js – Referral System – Telegram WebApp & Outside */
+/* يستخدم فقط الـ IDs الموجودة في HTML – لا يوجد Auto-Create */
 
-/* ========== مساعدين ========== */
+/* ====== Helpers ====== */
+const $ = id => document.getElementById(id);
+const BOT_USERNAME = 'Game_win_usdtBot'; // سيتم استبداله بـ ENV عند البناء
+
 function getTelegramUserID() {
   try {
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
-      return String(window.Telegram.WebApp.initDataUnsafe.user.id);
+    const t = window.Telegram?.WebApp?.initDataUnsafe?.user;
+    if (t?.id) {
+      localStorage.setItem('tg_user_id', String(t.id));
+      return String(t.id);
     }
-    return localStorage.getItem('fallbackUserID') || 'fallback_' + Math.random().toString(36).slice(2);
-  } catch {
-    return localStorage.getItem('fallbackUserID') || 'fallback_' + Math.random().toString(36).slice(2);
-  }
+  } catch {}
+  try {
+    const s = localStorage.getItem('tg_user_id');
+    if (s) return s;
+  } catch {}
+  return null;
 }
 
 function getRefParam() {
   try {
-    // من Telegram
-    const sp = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
-    if (sp && sp.startsWith('ref_')) return sp.replace('ref_', '');
-    // من URL
-    const p = new URLSearchParams(location.search);
-    const ref = p.get('ref') || p.get('startapp') || '';
-    if (ref.startsWith('ref_')) return ref.replace('ref_', '');
-    return ref;
-  } catch {
-    return '';
-  }
+    const t = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+    if (t?.startsWith('ref_')) return t.replace('ref_', '');
+  } catch {}
+  try {
+    const p = new URLSearchParams(window.location.search).get('ref');
+    if (p) return p;
+  } catch {}
+  return null;
 }
 
-function el(id) {
-  return document.getElementById(id) || document.querySelector(`[name="${id}"]`);
-}
-
-function setText(id, text) {
-  const elem = el(id);
-  if (elem) elem.textContent = text;
-}
-
-function setImage(id, src) {
-  const elem = el(id);
-  if (elem) elem.src = src;
-}
-
-function showCopySuccess() {
-  const m = el('copyMsg');
-  if (!m) return;
-  m.style.opacity = '1';
-  setTimeout(() => m.style.opacity = '0', 2000);
-}
-
-/* ========== API ========== */
+/* ====== API ====== */
 async function api(action, params = {}) {
   const url = new URL('/api/index', location.origin);
   url.searchParams.set('action', action);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const res = await fetch(url);
-  return res.json();
+  const r = await fetch(url);
+  return r.json();
 }
 
 async function registerUser(userID, ref) {
@@ -66,41 +49,74 @@ async function getProfile(userID) {
   return api('getProfile', { userID });
 }
 
-/* ========== تحديث الواجهة ========== */
+/* ====== UI ====== */
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  if (id === 'home') id = null;
+  const el = id ? document.getElementById(id) : document.getElementById('home');
+  if (el) el.classList.add('active');
+}
+
+function showCopySuccess() {
+  const m = $('copyMsg');
+  if (!m) return;
+  m.style.opacity = 1;
+  setTimeout(() => m.style.opacity = 0, 1500);
+}
+
 function updateUI(data) {
-  setText('points', data.points ?? 0);
-  setText('usdt', data.usdt ?? 0);
-  setText('refCount', data.referrals ?? 0);
-  if (data.photo_url) setImage('userImg', data.photo_url);
-  // إنشاء رابط الإحالة
-  const link = `https://t.me/${BOT_USERNAME}/earn?startapp=ref_${data.user_id}`;
-  // زر النسخ
-  const btn = el('copyBtn');
-  if (btn) {
-    btn.onclick = async () => {
+  if ($('points'))   $('points').textContent   = data.points ?? 0;
+  if ($('usdt'))     $('usdt').textContent     = data.usdt   ?? '0.00';
+  if ($('refCount')) $('refCount').textContent = data.referrals ?? 0;
+  if ($('userImg') && data.photo_url) {
+    $('userImg').src = data.photo_url;
+    $('userImg').style.display = 'block';
+  }
+}
+
+/* ====== Buttons ====== */
+function setupButtons() {
+  const map = {
+    withdrawBtn : () => showPage('withdraw'),
+    taskBtn     : () => showPage('task'),
+    adsBtn      : () => alert('ADS feature coming soon!'),
+    swapBtn     : () => showPage('swap'),
+    ledbordBtn  : () => showPage('ledbord'),
+    refalBtn    : () => showPage('refal'),
+    backWithdraw: () => showPage('home'),
+    backTask    : () => showPage('home'),
+    backSwap    : () => showPage('home'),
+    backLedbord : () => showPage('home'),
+    backRefal   : () => showPage('home'),
+    copyBtn     : async () => {
+      const userID = getTelegramUserID();
+      if (!userID) return alert('User not found');
+      const link = `https://t.me/${BOT_USERNAME}/earn?startapp=ref_${userID}`;
       try {
         await navigator.clipboard.writeText(link);
         showCopySuccess();
       } catch {
-        // fallback
-        const ta = document.createElement('textarea');
-        ta.value = link;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showCopySuccess();
+        alert('Copy failed, please copy manually:\n' + link);
       }
-    };
-  }
+    }
+  };
+  Object.entries(map).forEach(([id, fn]) => {
+    const el = $(id);
+    if (el) el.addEventListener('click', fn);
+  });
 }
 
-/* ========== تهيئة ========== */
+/* ====== Init ====== */
 (async function init() {
   const userID = getTelegramUserID();
-  const ref = getRefParam();
-  // تسجيل أو جلب البيانات
+  const ref    = getRefParam();
+  if (!userID) {
+    alert('Unable to get User ID');
+    return;
+  }
   await registerUser(userID, ref);
-  const prof = await getProfile(userID);
-  if (prof.success) updateUI(prof.data);
+  const profile = await getProfile(userID);
+  if (profile.success) updateUI(profile.data);
+  setupButtons();
+  showPage('home');
 })();
